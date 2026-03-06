@@ -53,12 +53,9 @@ def peer_files():
     return jsonify({"files": files})
 
 
-# Download a file FROM another peer's server (over HTTPS)
+# Returns the direct URL so browser downloads straight from peer
 @app.route("/peer-download", methods=["POST"])
 def peer_download():
-    import urllib.request
-    import ssl
-
     data = request.get_json()
     peer_url = data.get("peer_url", "").strip().rstrip("/")
     filename = data.get("filename", "").strip()
@@ -66,21 +63,8 @@ def peer_download():
     if not peer_url or not filename:
         return jsonify({"success": False, "error": "Missing peer URL or filename."}), 400
 
-    # Build the fetch URL
-    fetch_url = f"{peer_url}/peer/fetch/{filename}"
-
-    try:
-        ctx = ssl.create_default_context()
-        save_path = os.path.join(DOWNLOAD_FOLDER, filename)
-        urllib.request.urlretrieve(fetch_url, save_path)
-        return jsonify({"success": True})
-
-    except urllib.error.HTTPError as e:
-        if e.code == 404:
-            return jsonify({"success": False, "error": f'"{filename}" not found on that peer.'}), 404
-        return jsonify({"success": False, "error": f"HTTP error {e.code}"}), 500
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
+    direct_url = f"{peer_url}/peer/fetch/{filename}"
+    return jsonify({"success": True, "direct_url": direct_url})
 
 
 if __name__ == "__main__":
